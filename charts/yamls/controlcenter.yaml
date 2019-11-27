@@ -1,0 +1,77 @@
+---
+# Source: cp-control-center/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-cp-control-center
+  labels:
+    app: cp-control-center
+    chart: cp-control-center-0.1.0
+    release: kafka
+    heritage: Tiller
+spec:
+  type: NodePort
+  ports:
+    - name: cc-http
+      port: 9021
+  selector:
+    app: cp-control-center
+    release: kafka
+
+---
+# Source: cp-control-center/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-cp-control-center
+  labels:
+    app: cp-control-center
+    chart: cp-control-center-0.1.0
+    release: kafka
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cp-control-center
+      release: kafka
+  template:
+    metadata:
+      labels:
+        app: cp-control-center
+        release: kafka
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5556"
+    spec:
+      containers:
+        - name: cp-control-center
+          image: "confluentinc/cp-enterprise-control-center:5.2.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: cc-http
+              containerPort: 9021
+              protocol: TCP
+          resources:            {}
+            
+          env:
+            - name: CONTROL_CENTER_BOOTSTRAP_SERVERS
+              value: PLAINTEXT://kafka-cp-kafka-headless:9092
+            - name: CONTROL_CENTER_ZOOKEEPER_CONNECT
+              value: 
+            - name: CONTROL_CENTER_CONNECT_CLUSTER
+              value: http://kafka-cp-kafka-connect:8083
+            - name: CONTROL_CENTER_KSQL_URL
+              value: http://kafka-cp-ksql-server:8088
+            - name: CONTROL_CENTER_KSQL_ADVERTISED_URL
+              value: http://kafka-cp-ksql-server:8088
+            - name: CONTROL_CENTER_SCHEMA_REGISTRY_URL
+              value: http://kafka-cp-schema-registry:8081
+            - name: KAFKA_HEAP_OPTS
+              value: "-Xms512M -Xmx512M"
+            - name: "CONTROL_CENTER_REPLICATION_FACTOR"
+              value: "3"
+
+---
+# Source: cp-control-center/templates/controlcenter.yaml
+
